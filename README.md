@@ -1,61 +1,140 @@
-[ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3) ros package built using catkin_make. \
-Tested with Ubuntu-20.04, C++14, ROS-Noetic, OpenCV-4.5.4 and Pangolin-0.7 .
+RoboMaster Tello Talent ROS package. Developed by Tianbot
 
-## 1. Building package:
-### Creat a ros workspace
+# rmtt_orb3 package for RoboMaster Tello Talent (RMTT) 
+
++ Tested with ROS2GO Noetic version , eigen-3.4.0 and Pangolin-0.6.
++ Built with catkin_make and  publish /tf topic.
++ Add sparse map display with pcl.
++ Reference:,[ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3) , https://github.com/zdf-star/ORB_SLAM3_ros
+
+## Installation Instructions
+
+### Install pcl and pcl-tools
+
 ```
-mkdir -p ~/orbslam3_ws/src
+sudo apt install libpcl-dev pcl-tools
 ```
-Download and unzip this repository to directory `~/orbslam3_ws/src`, or just run 
+
+### Build Pangolin v0.6
+
+We use [Pangolin](https://github.com/stevenlovegrove/Pangolin) for visualization and user interface. Dowload and install instructions can be found at: https://github.com/stevenlovegrove/Pangolin.
+
 ```
-cd ~/orbslam3_ws/src
-git clone git@github.com:zdf-star/ORB_SLAM3.git
-```
-and rename it to `ORB_SLAM3`.
-### Building Thirdparty
-```
-cd ~/orbslam3_ws/src/ORB_SLAM3/Thirdparty/DBoW2
+git clone -b v0.6 https://github.com/stevenlovegrove/Pangolin.git
+sudo apt install libgl1-mesa-dev libglew-dev
+cd Pangolin
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+make -j6 
+sudo make install
+```
 
-cd ~/orbslam3_ws/src/ORB_SLAM3/Thirdparty/g2o
+### Build eigen v3.4.0
+
+Required by g2o . Download eigen v3.4.0 at: [http://eigen.tuxfamily.org](http://eigen.tuxfamily.org/). 
+
+```
+cd eigen-3.4.0
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+make -j6
+sudo make install
+```
 
-cd ~/orbslam3_ws/src/ORB_SLAM3/Thirdparty/Sophus
+### Build Thirdparty
+```shell
+roscd rmtt_ros
+git clone https://github.com/tianbot/rmtt_orb3.git
+ # DBow 
+cd rmtt_orb3/src/Thirdparty/DBoW2
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
-```
-### Uncompress the vocabulary:
-```
-cd ~/orbslam3_ws/src/ORB_SLAM3/Vocabulary
+make -j6
+# g2o
+roscd rmtt_ros
+cd rmtt_orb3/src/Thirdparty/g2o
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j6
+# Sophus
+roscd rmtt_ros
+cd rmtt_orb3/src/Thirdparty/Sophus
+mkdir build
+cd buildshell
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j6
+# Uncompress Vocabulary
+roscd rmtt_ros
+cd rmtt_orb3/src/Vocabulary
 cd Vocabulary
 tar -xf ORBvoc.txt.tar.gz
 ```
-### Building ORBSLAM3 package
+### Install rmtt_orb3 package
 ```
-cd ~/orbslam3_ws
-catkin_make
+cd ~/tianbot_ws
+catkin_make -j6
 ```
-## 2. Run
-Open a terminal, run
+## Usage Instructions
+
+### Start rmtt_orb3  
+
 ```
-roscore
+roslaunch rmtt_orb3 rmtt_orb3.launch
 ```
-In a new terminal, run the ros node:
+
++ Run rmtt_orb3 with ros bag:
+
+![image-20230118144136621](README.assets/image-20230118144136621.png)
+
+
+
+### Run rmtt_orb3 with rmtt_midas, octomap and RMTT
+
++ You need to start the RMTT node before starting others.
+
+  ```
+  roslaunch rmtt_driver rmtt_bringup.launch drone_ip:=xxx.xxx.xxx.xxx
+  ```
+
++ See rmtt_midas  instructions in rmtt_midas package.
+
++ See rmtt  instructions in rmtt_driver package.
+
++ Install octomap:
+
+  ```
+  sudo apt install ros-noetic-octomap ros-noetic-octomap-mapping ros-noetic-octomap-server
+  ```
+
 ```
-cd ~/orbslam3_ws
-source devel/setup.bash
-rosrun ORB_SLAM3 Mono PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
+roslaunch rmtt_orb3 rmtt_slam.launch
 ```
-Replace `PATH_TO_VOCABULARY` and `PATH_TO_SETTINGS_FILE` to a proper file, respectively.
-Settings file can be found in `~/orbslam3_ws/src/ORB_SLAM3/SettingsFile` .
+
+![image-20230118144433419](README.assets/image-20230118144433419.png)
+
+## Topics
+
+Published topics:
+
++ ~/midas/depth[sensor_msgs/Image]
++ ~/midas/pointcloud[sensor_msgs/PointCloud2]
++ ~/tf[tf2_msgs/TFMessage]
+
+Subscribed topics:
+
++ ~/image_raw[sensor_msgs/Image]
+
+Services:
+
++ ~/occupied_cells_vis_array[visualization_msgs/MarkerArray]
+
++ ~/projected_map[nav_msgs/OccupancyGrid]
+
+
 
 # ORB-SLAM3
 
@@ -69,9 +148,6 @@ ORB-SLAM3 is the first real-time SLAM library able to perform **Visual, Visual-I
 We provide examples to run ORB-SLAM3 in the [EuRoC dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) using stereo or monocular, with or without IMU, and in the [TUM-VI dataset](https://vision.in.tum.de/data/datasets/visual-inertial-dataset) using fisheye stereo or monocular, with or without IMU. Videos of some example executions can be found at [ORB-SLAM3 channel](https://www.youtube.com/channel/UCXVt-kXG6T95Z4tVaYlU80Q).
 
 This software is based on [ORB-SLAM2](https://github.com/raulmur/ORB_SLAM2) developed by [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/), [Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/), [J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) and [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2)).
-
-<a href="https://youtu.be/HyLNq-98LRo" target="_blank"><img src="https://img.youtube.com/vi/HyLNq-98LRo/0.jpg" 
-alt="ORB-SLAM3" width="240" height="180" border="10" /></a>
 
 ### Related Publications:
 
@@ -96,7 +172,7 @@ ORB-SLAM3 is released under [GPLv3 license](https://github.com/UZ-SLAMLab/ORB_SL
 For a closed-source version of ORB-SLAM3 for commercial purposes, please contact the authors: orbslam (at) unizar (dot) es.
 
 If you use ORB-SLAM3 in an academic work, please cite:
-  
+
     @article{ORBSLAM3_TRO,
       title={{ORB-SLAM3}: An Accurate Open-Source Library for Visual, Visual-Inertial 
                and Multi-Map {SLAM}},
